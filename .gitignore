@@ -8,3 +8,8 @@ static/
 media/
 .DS_Store
 .env
+
+# --- allow tracked demo static for HW ---
+!blog/static/
+!blog/static/css/
+!blog/static/css/blog.css
