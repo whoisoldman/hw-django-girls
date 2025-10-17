@@ -1,73 +1,154 @@
-# Complete Django Girls Tutorial
+# 🐳 Django Girls — Dockerized Application
 
-This repository contains the code that one would eventually have were they to go through the [Django Girls tutorial](https://tutorial.djangogirls.org/en/).
+Учебный проект в рамках домашнего задания **«Упаковка приложений в Docker»**.
+Проект Django Girls развёрнут в контейнере Docker, снабжён CI/CD пайплайном на GitHub Actions
+и автоматически публикуется в GitHub Container Registry (GHCR).
 
-[![CircleCI](https://circleci.com/gh/NdagiStanley/django_girls_complete.svg?style=svg)](https://circleci.com/gh/NdagiStanley/django_girls_complete)
+---
 
-## Differences
+## 🚀 Репозиторий
+**GitHub:** [whoisoldman/hw-django-girls](https://github.com/whoisoldman/hw-django-girls)
+**Docker image (GHCR):** [ghcr.io/whoisoldman/hw-django-girls](https://ghcr.io/whoisoldman/hw-django-girls)
 
-Expressing my authorial rights, some things are a bit different from the tutorial:
+![Build](https://github.com/whoisoldman/hw-django-girls/actions/workflows/docker.yml/badge.svg)
 
-- A `Log in` and `Log out` links on the page header
-- A `Back` link within the *blog-detail* and *blog-edit* pages
-- A more extensive `.gitignore` file
-- A `.editorconfig` file
-- An additional python package in the requirements.txt: `pycodestyle`
+---
 
-- Within `mysite/settings.py`,
+## 📦 Структура проекта
 
-  - Use of `Africa/Nairobi` as my *TIME_ZONE*
-  - Use of `en-us` as my *LANGUAGE_CODE*
-  - Addition of `0.0.0.0` and `.herokuapp.com` to the *ALLOWED_HOSTS* list
-
-## Setup
-
-In a python virtual environment, run:
-
-- `pip install -r requirements.txt`
-- `python manage.py migrate blog`
-- `python manage.py createsuperuser` (to create user that you'll use to log in)
-
-### Run the application
-
-```bash
-python manage.py runserver
+Файл `projecttree.txt` содержит полное дерево проекта, включая служебные папки.
+Ключевые файлы:
+```
+Dockerfile
+.dockerignore
+.github/workflows/docker.yml
+init.sh
+requirements.txt
+manage.py
+mysite/
+blog/
+projecttree.txt
 ```
 
-Now, you are good to go. Your blog is ready.
+---
 
-### Test
+## ⚙️ Dockerfile (основные шаги)
+
+- Базовый образ: `python:3.8-slim`
+- Копирование зависимостей из `requirements.txt`
+- Установка зависимостей и `gunicorn`
+- Копирование проекта и выполнение миграций
+- Подготовка статики (`collectstatic`)
+- Запуск приложения:
+  ```bash
+  gunicorn --bind 0.0.0.0:8000 mysite.wsgi:application
+  ```
+
+---
+
+## 🧩 Локальный запуск
 
 ```bash
-python manage.py test
+# Клонировать репозиторий
+git clone https://github.com/whoisoldman/hw-django-girls.git
+cd hw-django-girls
+
+# Сборка и запуск контейнера
+docker build -t hw-django-girls:latest .
+docker run --rm -p 8000:8000 --name djgirls hw-django-girls:latest
+
+# Проверка
+curl -I http://127.0.0.1:8000/
+curl -I http://127.0.0.1:8000/static/css/blog.css
 ```
 
-### Docker
-NB: The app instance will run off the a preset admin user as set in [init.sh](/init.sh).
+После сборки приложение доступно по адресу:
+👉 [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
-To spin up the application using docker, ensure that Docker is installed. Then run:
+---
+
+## ☁️ Запуск из GitHub Container Registry
 
 ```bash
-docker-compose up
+docker pull ghcr.io/whoisoldman/hw-django-girls:latest
+docker run -d --rm -p 8000:8000 --name djgirls-ghcr ghcr.io/whoisoldman/hw-django-girls:latest
+curl -I http://127.0.0.1:8000/
 ```
 
-Or in detached mode:
+Образ автоматически обновляется при каждом `git push` в ветку `main`.
+Теги формируются автоматически:
+- `latest`
+- `sha-<короткий хэш коммита>`
+
+---
+
+## 🔄 CI/CD пайплайн
+
+**Workflow:** [`.github/workflows/docker.yml`](.github/workflows/docker.yml)
+
+**Описание шагов:**
+1. `checkout` — загрузка репозитория;
+2. `docker/login-action` — авторизация в GHCR;
+3. `docker/metadata-action` — генерация тегов;
+4. `docker/build-push-action` — сборка и пуш образа.
+
+Пример публикации в логе Actions:
+```
+pushing ghcr.io/whoisoldman/hw-django-girls:latest
+pushing ghcr.io/whoisoldman/hw-django-girls:sha-82801fd
+```
+
+---
+
+## 🧾 Применённые технологии
+
+| Технология | Назначение |
+|-------------|------------|
+| **Python 3.8** | Интерпретатор |
+| **Django 3.0.6** | Веб-фреймворк |
+| **Gunicorn** | WSGI-сервер |
+| **WhiteNoise** | Отдача статики |
+| **Docker** | Контейнеризация |
+| **GitHub Actions + GHCR** | CI/CD и реестр образов |
+
+---
+
+## 📂 Файл projecttree.txt
+
+Полная структура проекта сохранена в [projecttree.txt](./projecttree.txt).
+Пример (верхние уровни):
+
+```
+├── Dockerfile
+├── .dockerignore
+├── .github/workflows/docker.yml
+├── blog/
+│   ├── static/css/blog.css
+│   ├── templates/blog/
+│   └── ...
+├── mysite/
+│   ├── settings.py
+│   └── wsgi.py
+└── requirements.txt
+```
+
+---
+
+## ✅ Проверка
+
+После сборки и запуска контейнера:
 
 ```bash
-docker-compose up -d
+curl -I http://127.0.0.1:8000/
+# → HTTP/1.1 200 OK
+
+curl -I http://127.0.0.1:8000/static/css/blog.css
+# → HTTP/1.1 200 OK
 ```
 
-The application will be live at [0.0.0.0:8000](0.0.0.0:8000)
+---
 
-### Log in/ out
-
-- Click on `Log in` (you'll be redirected to the Admin page)
-- On the admin page, fill in the credentials of the superuser created in [Setup](#setup)
-- Click on the *Log in* button (You'll be redirected back to the page)
-- Click on `Log out` to log out.
-
-### Blog entry
-
-- Log in
-- Click on the `+` button, enter the _**title**_ and _**text**_
-- Finally hit the `Save` button
+## 📚 Автор
+**whoisoldman**
+Домашнее задание курса: *«Упаковка приложений в Docker» (Django Girls)*
+MacOS 12 | Docker Desktop | VS Code | GitHub Actions
